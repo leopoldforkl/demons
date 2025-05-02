@@ -1,5 +1,5 @@
 '''
-conda activate view-of-delft-env
+conda activate demons-env
 python -m scripts.dynamic_voxel_map
 '''
 
