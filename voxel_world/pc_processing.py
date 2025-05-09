@@ -41,7 +41,7 @@ def generate_freespace_pointcloud(sensor_point_cloud, sensor_origin, points_per_
     # Compute the vector from the sensor origin to each point in the point cloud
     points = sensor_point_cloud - sensor_origin  # Shape: (N, 3)
     # Generate S equally spaced scalar values between 0 and 1 to interpolate along each ray
-    scales = np.linspace(0, 1, points_per_ray)  # Shape: (S,)
+    scales = np.linspace(0, 1, points_per_ray + 2)[1:-1]  # Shape: (S,)
     # Start timing the operation
 
     start_time = time.perf_counter()
@@ -80,47 +80,51 @@ def generate_voxel_array_dense(point_cloud, cube_size, range_x, range_y, range_z
     start_time = time.time()
     total_points = len(point_cloud)
     translation = np.array([range_x[0], range_y[0], range_z[0]]) # to make sure all points in the range are positive!
-    
-    # --- Step 1: Extract XYZ coordinates ---
-    t0 = time.time()
-    cloud_3d = point_cloud[:, :3] - translation  # shape (N, 3)
-    t1 = time.time()
-    print(f"1. Extract XYZ and translate PC: {t1 - t0:.6f}s ({(t1 - t0)/total_points:.6f}s per point)")
-    
-    # --- Step 2: Convert points to voxel indices ---
-    t0 = time.time()
-    voxel_indices = np.floor(cloud_3d / cube_size).astype(int)
-    t1 = time.time()
-    print(f"2. Voxel index conversion: {t1 - t0:.6f}s ({(t1 - t0)/total_points:.6f}s per point)")
 
     # compute number of voxels along each axis
     nx = int(np.floor((range_x[1] - range_x[0]) / cube_size))
     ny = int(np.floor((range_y[1] - range_y[0]) / cube_size))
     nz = int(np.floor((range_z[1] - range_z[0]) / cube_size))
-
-    # --- Step 3: 
-    # convert to sparse matrix in range ---
-    t0 = time.time()
-    valid_mask = (
-        (voxel_indices[:,0] >= 0) & (voxel_indices[:,0] < nx) &
-        (voxel_indices[:,1] >= 0) & (voxel_indices[:,1] < ny) &
-        (voxel_indices[:,2] >= 0) & (voxel_indices[:,2] < nz)
-    )
-    valid_voxels = voxel_indices[valid_mask]
     voxel_matrix = np.zeros((nx, ny, nz), dtype=int)
-    # for each point, increment its voxel
-    np.add.at(voxel_matrix, (valid_voxels[:,0], valid_voxels[:,1], valid_voxels[:,2]), 1)
 
-    t1 = time.time()
-    print(f"3. Conversion to matrix: {t1 - t0:.6f}s ({(t1 - t0)/total_points:.6f}s per point)")
-    
+    if total_points > 0:
+        # --- Step 1: Extract XYZ coordinates ---
+        t0 = time.time()
+        cloud_3d = point_cloud[:, :3] - translation  # shape (N, 3)
+        t1 = time.time()
+        print(f"1. Extract XYZ and translate PC: {t1 - t0:.6f}s ({(t1 - t0)/total_points:.6f}s per point)")
+        
+        # --- Step 2: Convert points to voxel indices ---
+        t0 = time.time()
+        voxel_indices = np.floor(cloud_3d / cube_size).astype(int)
+        t1 = time.time()
+        print(f"2. Voxel index conversion: {t1 - t0:.6f}s ({(t1 - t0)/total_points:.6f}s per point)")
 
-    
-    # --- Total time ---
-    total_time = time.time() - start_time
-    print(f"\nTotal execution time: {total_time:.6f}s ({total_time/total_points:.6f}s per point)")
-    occupied = np.count_nonzero(voxel_matrix)
-    print(f"Occupied voxels: {occupied} / {nx*ny*nz}")
+        # --- Step 3: 
+        # convert to sparse matrix in range ---
+        t0 = time.time()
+        valid_mask = (
+            (voxel_indices[:,0] >= 0) & (voxel_indices[:,0] < nx) &
+            (voxel_indices[:,1] >= 0) & (voxel_indices[:,1] < ny) &
+            (voxel_indices[:,2] >= 0) & (voxel_indices[:,2] < nz)
+        )
+        valid_voxels = voxel_indices[valid_mask]
+        # for each point, increment its voxel
+        np.add.at(voxel_matrix, (valid_voxels[:,0], valid_voxels[:,1], valid_voxels[:,2]), 1)
+
+        t1 = time.time()
+        print(f"3. Conversion to matrix: {t1 - t0:.6f}s ({(t1 - t0)/total_points:.6f}s per point)")
+        
+
+        
+        # --- Total time ---
+        total_time = time.time() - start_time
+        print(f"\nTotal execution time: {total_time:.6f}s ({total_time/total_points:.6f}s per point)")
+        occupied = np.count_nonzero(voxel_matrix)
+        print(f"Occupied voxels: {occupied} / {nx*ny*nz}")
+    else:
+        print("Warning: Empty Pointcloud!")
+        
     
     return voxel_matrix, translation
 
