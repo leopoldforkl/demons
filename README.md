@@ -39,6 +39,7 @@
 
    ```bash
    pip install pyvista==0.38.6
+   pip install k3d==2.10.0
    ```
 
 5. **Note**:
