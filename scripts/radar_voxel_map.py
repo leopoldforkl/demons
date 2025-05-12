@@ -4,19 +4,18 @@ python -m scripts.radar_voxel_map
 '''
 
 import pyvista as pv
-from voxel_world.frame_loader import get_pointcloud, get_origin
-from voxel_world.pc_processing import generate_freespace_pointcloud, generate_voxel_array_dense, voxel_matrix_to_coords, get_freespace_matrix
-from voxel_world.plotter_functions import draw_domain, draw_voxels, draw_coordinate_axes, draw_pointcloud
+from voxel_world.frame_loader import get_pointcloud, get_origin, get_radar_velocities
+from voxel_world.pc_processing import generate_freespace_pointcloud, generate_voxel_array_dense, voxel_matrix_to_coords, get_freespace_matrix, generate_velocity_voxels, velocity_voxel_matrix_to_coords
+from voxel_world.plotter_functions import draw_domain, draw_voxels, draw_coordinate_axes, draw_pointcloud, draw_velocities
 
 import numpy as np
 
 #Define Frame Range
 START_FRAME = 10        #first frame in the sequence
-END_FRAME = 200         #last frame in the sequence
+END_FRAME = 30         #last frame in the sequence
 
 #Define Map-Type
 REFERENCE_FRAME = "map" #options: "lidar", "map"
-SENSOR = "radar"        #options: "lidar", "radar"
 
 #Voxel-Parameters
 X_RANGE = (-1250, -1200)
@@ -31,8 +30,9 @@ OCCUPIED_TRESHOLD = 0
 DRAW_POINTCLOUD = False
 DRAW_OCCUPIED = True
 DRAW_FREE = False
-DRAW_DYNAMIC = True
+DRAW_DYNAMIC = False
 DRAW_MAP_FRAME = False
+DRAW_VELOCITIES = False
 
 #Define how many frames should be between frames determining dynamic cells
 DELTA_FRAMES = 1    #needs to be positive
@@ -66,20 +66,18 @@ def plot_scene(start_frame, end_frame,
         frame_str = f"{int(frame_number):05d}"
     
         # 2) Load point cloud for this frame
-        pc = get_pointcloud(frame_str, reference_frame=REFERENCE_FRAME, sensor=SENSOR)
-        sensor_origin = get_origin(SENSOR, REFERENCE_FRAME, frame_str)
+        pc_radar = get_pointcloud(frame_str, reference_frame=REFERENCE_FRAME, sensor="radar")
+        sensor_origin_radar = get_origin("radar", REFERENCE_FRAME, frame_str)
+        velocity_vectors = get_radar_velocities(frame_str, REFERENCE_FRAME)
+        velocity_matrix = generate_velocity_voxels(pc_radar, velocity_vectors, cube_size, x_range, y_range, z_range)
 
         # 3) Generate occupied voxels
-        occupied_voxel_matrix, translation = generate_voxel_array_dense(pc, cube_size, x_range, y_range, z_range)
+        occupied_voxel_matrix, translation = generate_voxel_array_dense(pc_radar, cube_size, x_range, y_range, z_range)
         voxel_coords = voxel_matrix_to_coords(occupied_voxel_matrix, cube_size, translation, threshold=OCCUPIED_TRESHOLD)
-
-        # 4) Draw pointcloud
-        if DRAW_POINTCLOUD:
-            draw_pointcloud(plotter, pc[:, :3], color="red", point_size=2)
 
         # 5) Generate Freespace
         try:
-            freespace_pc = generate_freespace_pointcloud(voxel_coords, sensor_origin, POINTS_PER_RAY)
+            freespace_pc = generate_freespace_pointcloud(voxel_coords, sensor_origin_radar, POINTS_PER_RAY)
             free_voxel_matrix, translation = generate_voxel_array_dense(freespace_pc, cube_size, x_range, y_range, z_range)
             free_voxels = get_freespace_matrix(free_voxel_matrix, occupied_voxel_matrix)
         except Exception as e:
@@ -101,9 +99,21 @@ def plot_scene(start_frame, end_frame,
     occupied_dynamic = ((p_occupied > 0.0) & (p_occupied <= 0.1)).astype(int)
     free = (p_free > 0.8).astype(int)
     
-    
+    final_pointcloud = pc_radar[:, :3]
+    final_voxelcloud, voxel_velocity_vectors = velocity_voxel_matrix_to_coords(occupied_voxel_matrix, velocity_matrix, cube_size, translation, threshold=0)
+
+    draw_pointcloud(plotter, final_voxelcloud, color="green", point_size=2)
+    draw_velocities(plotter, final_voxelcloud, voxel_velocity_vectors, scale_factor=1.0, color="green")
+
+    # Drawing
+    if DRAW_POINTCLOUD:
+        draw_pointcloud(plotter, final_pointcloud, color="red", point_size=2)
+
+    if DRAW_VELOCITIES:
+        draw_velocities(plotter, final_pointcloud, velocity_vectors, scale_factor=0.8, color="blue")
+
     if DRAW_OCCUPIED:
-            draw_voxels(plotter, voxel_matrix_to_coords(occupied_static, cube_size, translation, threshold=0), cube_size=cube_size) #default blue
+            draw_voxels(plotter, voxel_matrix_to_coords(occupied_voxel_matrix, cube_size, translation, threshold=0), cube_size=cube_size) #default blue
     if DRAW_FREE:
             draw_voxels(plotter, voxel_matrix_to_coords(free, cube_size, translation, threshold=0), cube_size=cube_size, color="grey")
     if DRAW_DYNAMIC:
