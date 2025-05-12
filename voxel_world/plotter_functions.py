@@ -112,3 +112,39 @@ def draw_pointcloud(plotter, points, color="red", point_size=5):
         point_size (int): Size of the points.
     """
     plotter.add_points(points, color=color, point_size=point_size)
+
+
+def draw_velocities(plotter, points, velocity_vectors, scale_factor=0.2, color="red"):
+    """
+    Draws a point cloud from externally generated points.
+    
+    Parameters:
+        plotter (pv.Plotter): The PyVista plotter instance.
+        points (np.ndarray or list): A collection of points, each defined as (x, y, z).
+        velocity_vectors (np.ndarray or list): collection of 3D-vectors (one for each point)
+        color (str): The color of the points.
+    """
+    # Ensure that points and velocity_vectors have the same length
+    if len(points) != len(velocity_vectors):
+        raise ValueError("Points and velocity vectors must have the same length.")
+    
+    # Convert to np arrays
+    points = np.asarray(points)
+    velocity_vectors = np.asarray(velocity_vectors)
+
+    # Create a PolyData object for the points
+    points_polydata = pv.PolyData(points)
+    
+    # Add the velocity vectors as point data
+    points_polydata['vectors'] = velocity_vectors
+    
+    # Create the glyphs (arrows) for the velocity vectors
+    arrows = points_polydata.glyph(
+        orient='vectors',  # Use the named vector array
+        scale=True,       # Scale arrows by vector magnitude
+        factor=scale_factor,       # Scale factor for the arrows
+        geom=pv.Arrow()   # Use the standard arrow geometry
+    )
+
+    # Add the arrows to the plotter
+    plotter.add_mesh(arrows, color=color)

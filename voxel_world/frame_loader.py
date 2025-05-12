@@ -157,3 +157,36 @@ def get_origin(origin, target_frame, frame_number):
 
     origin_coordinates = vector[0, :3]
     return origin_coordinates
+
+def get_radar_velocity_vectors(pc_radar, compensated_radial_velocity):
+    radial_unit_vectors = pc_radar / np.linalg.norm(pc_radar, axis=1, keepdims=True)
+    velocity_vectors = compensated_radial_velocity[:, None] * radial_unit_vectors
+
+    return velocity_vectors
+
+def get_radar_velocities(frame_number, reference_frame="camera"):
+
+    frame_data = FrameDataLoader(kitti_locations=kitti_locations, frame_number=frame_number)
+    transforms = FrameTransformMatrix(frame_data)
+
+    transform_matrix = transforms.t_camera_radar #transform_matrices['radar']
+
+    compensated_radial_velocity = frame_data.radar_data[:, 5]
+    radar_points_camera_frame = transform_pcl(points=frame_data.radar_data,
+                                                  transform_matrix=transform_matrix)
+    pc_radar = radar_points_camera_frame[:, 0:3]
+    velocity_vectors = get_radar_velocity_vectors(pc_radar, compensated_radial_velocity) # velocity vectors in camera frame
+
+    if reference_frame=="camera":
+        velocity_vectors=velocity_vectors
+    elif reference_frame=="map":
+        odom2cam, map2cam, utm2cam = transforms.get_world_transform()
+        # Set translation part to zero
+        map2cam[0:3, 3] = 0
+        velocity_vectors_homo=transform_pcl(velocity_vectors, map2cam)
+        velocity_vectors = velocity_vectors_homo[:, :3]
+    else:
+        print("Warning: Invalid Reference Frame for radar velocity vectors!")
+        velocity_vectors=None
+
+    return velocity_vectors
