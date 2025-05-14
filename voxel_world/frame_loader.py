@@ -164,7 +164,30 @@ def get_radar_velocity_vectors(pc_radar, compensated_radial_velocity):
 
     return velocity_vectors
 
-def get_radar_velocities(frame_number, reference_frame="camera"):
+def cap_velocities(vectors, min_length, max_length):
+    """
+    Set vectors with lengths outside [min_length, max_length] to zero.
+    
+    Args:
+        vectors: Nx3 numpy array of 3D vectors
+        min_length: minimum allowed vector length
+        max_length: maximum allowed vector length
+    
+    Returns:
+        Modified array with thresholded vectors set to zero
+    """
+    # Compute squared lengths (avoids sqrt operation)
+    sq_lengths = np.sum(vectors**2, axis=1)
+    
+    # Create mask for vectors outside the threshold
+    mask = (sq_lengths < min_length**2) | (sq_lengths > max_length**2)
+    
+    # Apply mask (set invalid vectors to zero)
+    vectors[mask] = 0
+    
+    return vectors
+
+def get_radar_velocities(frame_number, reference_frame="camera", v_min=0.0, v_max=10.0):
 
     frame_data = FrameDataLoader(kitti_locations=kitti_locations, frame_number=frame_number)
     transforms = FrameTransformMatrix(frame_data)
@@ -175,7 +198,8 @@ def get_radar_velocities(frame_number, reference_frame="camera"):
     radar_points_camera_frame = transform_pcl(points=frame_data.radar_data,
                                                   transform_matrix=transform_matrix)
     pc_radar = radar_points_camera_frame[:, 0:3]
-    velocity_vectors = get_radar_velocity_vectors(pc_radar, compensated_radial_velocity) # velocity vectors in camera frame
+    velocity_vectors_raw = get_radar_velocity_vectors(pc_radar, compensated_radial_velocity) # velocity vectors in camera frame
+    velocity_vectors = cap_velocities(velocity_vectors_raw, v_min, v_max) # sets all vectors outside the range to zero
 
     if reference_frame=="camera":
         velocity_vectors=velocity_vectors

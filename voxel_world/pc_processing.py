@@ -172,8 +172,6 @@ def generate_velocity_voxels(point_cloud, velocity_vectors, cube_size, range_x, 
         range_z:     Tuple (min_z, max_z) defining the z-axis bounds.
     
     Returns:
-        voxel_matrix: (nx,ny,nz) array counting points per voxel
-        velocity_matrix: (nx,ny,nz,3) array of accumulated velocity vectors
         avg_velocity_matrix: (nx,ny,nz,3) array of average velocity vectors (0 where no points)
         translation: 3d-vector applied to original
     """

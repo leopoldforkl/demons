@@ -60,7 +60,7 @@ def plot_scene(start_frame, end_frame,
         pc_lidar = get_pointcloud(frame_str, reference_frame="map", sensor="lidar")
         sensor_origin_radar = get_origin("radar", "map", frame_str)
         sensor_origin_lidar = get_origin("lidar", "map", frame_str)
-        velocity_vectors = get_radar_velocities(frame_str, "map")
+        velocity_vectors = get_radar_velocities(frame_str, "map", v_min=0.0, v_max=5.0)
 
         
 
@@ -80,10 +80,20 @@ def plot_scene(start_frame, end_frame,
         occupied_voxel_matrix = occupied_voxel_matrix_l                                                                         #use lidar, can be changed to radar
         free_voxel_matrix, translation = generate_voxel_array_dense(freespace_pc_lidar, cube_size, x_range, y_range, z_range)   #use lidar, can be changed to radar
 
-        
+        draw_voxels(plotter, voxel_matrix_to_coords(occupied_voxel_matrix_r, cube_size, translation, threshold=0), cube_size=cube_size, color=[1.0, 0.75, 0.0]) #orange
+        final_voxelcloud_r, voxel_velocity_vectors = velocity_voxel_matrix_to_coords(occupied_voxel_matrix_r, velocity_matrix, cube_size, translation, threshold=0)
+        draw_velocities(plotter, final_voxelcloud_r, voxel_velocity_vectors, scale_factor=2.0, color="green")
+
+    '''
+    ToDo:
+    I want to plot all voxels as occupied which are occupied in over 90% of the frames with blue
+    I want to plot all voxels that are currently occupied but not yet blue in orange
+    I want to plot all orange voxels which contain a velocity vector (of some minimum size) in red
+    '''
 
     # Drawing Operations
     draw_pointcloud(plotter, pc_lidar[:, :3], color="red", point_size=2)
+    draw_voxels(plotter, voxel_matrix_to_coords(occupied_voxel_matrix_l, cube_size, translation, threshold=0), cube_size=cube_size) #default blue
 
     #(Optional) coordinate axes if you want them every frame
     if DRAW_MAP_FRAME:
