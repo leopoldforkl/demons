@@ -1,0 +1,1 @@
+VOD_ROOT="C:/Users/leopo/Documents/06_Werkstudent/fml-hiwi"
