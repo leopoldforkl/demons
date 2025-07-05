@@ -1,0 +1,19 @@
+{
+    "start_frame": 65,
+    "end_frame": 130,
+    "reference_frame": "map",
+    "sensor": "lidar",
+    "x_range": [-1240, -1210],
+    "y_range": [1520, 1550],
+    "z_range": [-5, 5],
+    "cube_size": 0.1,
+    "points_per_ray": 50,
+    "freespace_threshold": 0,
+    "occupied_threshold": 0,
+    "refresh": false,
+    "draw_pointcloud": true,
+    "draw_freespace_pointcloud": false,
+    "draw_occupied": true,
+    "draw_free": false,
+    "draw_map_frame": false
+}
