@@ -4,7 +4,7 @@ from typing import Optional, List
 from matplotlib import pyplot as plt
 import logging
 
-from vod.configuration import KittiLocations
+from dogms.src.vod.configuration import KittiLocations
 
 
 class FrameDataLoader:

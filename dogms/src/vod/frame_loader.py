@@ -1,9 +1,9 @@
-from src.vod.configuration import KittiLocations
-from src.vod.frame import FrameDataLoader
-from src.vod.frame import FrameTransformMatrix
-from src.vod.frame import transform_pcl, homogeneous_coordinates, homogeneous_transformation
+from dogms.src.vod.configuration import KittiLocations
+from dogms.src.vod.frame import FrameDataLoader
+from dogms.src.vod.frame import FrameTransformMatrix
+from dogms.src.vod.frame import transform_pcl, homogeneous_coordinates, homogeneous_transformation
 import numpy as np
-from configs.config import VOD_ROOT
+from dogms.configs.config import VOD_ROOT
 
 # Set dataset path
 import os
