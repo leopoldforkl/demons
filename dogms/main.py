@@ -4,8 +4,8 @@ import os
 from dogms.src.utils import load_config
 
 # --- USER SETTINGS ---
-SCRIPT_NAME = "test"        # Name of the script in src/ without .py
-CONFIG_FILE = "config_test.json" # Name of config file in configs/
+SCRIPT_NAME = "draw_vod_voxelmap_static"        # Name of the script in src/ without .py
+CONFIG_FILE = "static_vod_map_01.json" # Name of config file in configs/
 
 #Note: you can run the main with python -m dogms.main
 # ----------------------
